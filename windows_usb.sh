@@ -6,9 +6,23 @@ mbr="/usr/share/syslinux/mbr.bin"
 mounts=("/tmp/iso" "/tmp/usb")
 
 # check to if the script is ran as root
-if [[ $(id -u) -ne 0 ]]; then echo "Script must be ran as root"; exit 1; fi
+if [[ $(id -u) -ne 0 ]]; then echo -e "\e[33mScript must be ran as root\033[0m"; exit 1; fi
 # checks for iso image argument
-if [[ -z $1 ]]; then echo "Specify path to iso image: $0 /path/to/iso"; exit 1; fi
+if [[ -z $1 ]]; then
+    # echos error and exits
+    echo -e "\e[33mSpecify path to iso image: $0 /path/to/iso\033[0m"
+    exit 1
+# checks if iso image exists
+elif [[ ! -f $1 ]]; then
+    # echos error and exits
+    echo -e "\e[33m$1 not found \033[0m"
+    exit 1
+# checks if file isn't an iso image
+elif ! file --mime-type "$1" | grep -q x-iso9660-image; then
+    # echos error and exits
+    echo -e "\e[33m$1 is not an iso image \033[0m"
+    exit 1
+fi
 
 # main while loop
 while true; do
