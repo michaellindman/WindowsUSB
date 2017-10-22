@@ -15,17 +15,23 @@ while true; do
     # get list of storage devices from lsblk
     disks=($(lsblk -dnp --output NAME))
     echo "Choose a device"
-    # loops through and echos storage devices
-    for i in "${!disks[@]}"; do
-        echo "$i ${disks[$i]}"
+    # select statement for disks
+    select option in ${disks[@]}; do
+        # checks if option is valid
+        if [[ -n $option ]]; then
+            # assign selected disk to devices
+            device=$option
+            # break from select statement
+            break
+        else
+            # echos error message
+            echo "Invalid result"
+        fi
     done
-    # user input for storage device
-    read -p "device: " i
     # warning for selected storage device
-    echo -ne "\e[0;31mAre you sure ${disks[$i]} is the correct device? All data will be erased? [Y/n] \033[0m"
+    echo -ne "\e[0;31mAre you sure $device is the correct device? All data will be erased? [Y/n] \033[0m"
     read go
     if [[ ${go,,} = "y" ]]; then
-        device=${disks[$i]}
         # stores list of partitions for the selected storage device
         partitions=($(lsblk $device -fnpr --output NAME | sed -n '1!p'))
         # loops through partitions
@@ -39,7 +45,7 @@ while true; do
                 if [[ ${check,,} = "y" ]]; then
                     # checks if partition is busy
                     if [ -n "$(fuser $mountpoint)" ]; then
-                        echo "$mountpoint: target is busy"
+                        echo -e "\e[33m$mountpoint: target is busy \033[0m"
                         # continue while loop
                         continue 2
                     else
@@ -75,7 +81,7 @@ if [ -f $mbr ]; then
     dd if=$mbr of=$device
 else
     # echos error and exits
-    echo "Error: $mbr could not be found"
+    echo -e "\e[33mError: $mbr could not be found \033[0m"
     exit 1
 fi
 
