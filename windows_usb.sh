@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# path to mbr.bin
-mbr="/usr/share/syslinux/mbr.bin"
 # mountpoints for iso image and storage device
 mounts=("/tmp/iso" "/tmp/usb")
 
@@ -72,30 +70,21 @@ while true; do
                 fi
             fi
         done
-        # asks the user to create partition table
-        echo -e "Create partition table on $device (Select partition \033[1mtype 7\033[0m and \033[1mbootable\033[0m flag)"
-        read -p "contiune [Y/n]: " go
-        if [[ ${go,,} = "y" ]]; then
-            # runs cfdisk for selected storage device
-            cfdisk $device
-            # break from while loop
-            break
-        else
-            # continues while loop if user selects no
-            continue
-        fi
+    break
     fi
 done
 
-# create NTFS partition on storage device
-mkfs.ntfs -f ${device}1
-# checks if mbr.bin exists
-if [ -f $mbr ]; then
+# checks if parted is installed
+if [ -f /sbin/parted ]; then
     # write mbr to storage device
-    dd if=$mbr of=$device
+    parted -s ${device} mklabel msdos
+    # write partition to whole device
+    parted -a opt ${device} mkpart primary ntfs 0% 100%
+    # create NTFS partition on storage device
+    mkfs.ntfs -L Windows -f ${device}1
 else
     # echos error and exits
-    echo -e "\e[33mError: $mbr could not be found \033[0m"
+    echo -e "\e[33mError: Could not find GNU parted, Please install to continue. \033[0m"
     exit 1
 fi
 
