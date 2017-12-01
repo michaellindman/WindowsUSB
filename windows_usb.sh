@@ -70,12 +70,15 @@ while true; do
                 fi
             fi
         done
+    # breaks from while loop
     break
     fi
 done
 
 # checks if parted is installed
-if [ -f /sbin/parted ]; then
+which parted &> /dev/null
+EXIT=$?
+if [ $EXIT -eq 0 ]; then
     # write mbr to storage device
     parted -s ${device} mklabel msdos
     # write partition to whole device
