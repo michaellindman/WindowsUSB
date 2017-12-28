@@ -25,10 +25,12 @@ fi
 # main while loop
 while true; do
     # get list of storage devices from lsblk
-    disks=($(lsblk -dnp --output NAME))
+    disks=($(lsblk -dnp --output NAME) "Quit")
     echo "Choose a device"
     # select statement for disks
     select option in ${disks[@]}; do
+        # exit if Quit is selected
+        if [[ $option == "Quit" ]]; then exit 1; fi
         # checks if option is valid
         if [[ -n $option ]]; then
             # assign selected disk to devices
@@ -56,7 +58,8 @@ while true; do
                 read -p "${partitions[$i]} is mounted on $mountpoint do you want to unmount it? [Y/n] " check
                 if [[ ${check,,} = "y" ]]; then
                     # checks if partition is busy
-                    if [ -n "$(fuser $mountpoint)" ]; then
+                    fuser -s $mountpoint
+                    if [ $? -eq 0 ]; then
                         echo -e "\e[33m$mountpoint: target is busy \033[0m"
                         # continue while loop
                         continue 2
@@ -77,14 +80,13 @@ done
 
 # checks if parted is installed
 which parted &> /dev/null
-EXIT=$?
-if [ $EXIT -eq 0 ]; then
+if [ $? -eq 0 ]; then
     # write mbr to storage device
     parted -s ${device} mklabel msdos
     # write partition to whole device
     parted -a opt ${device} mkpart primary ntfs 0% 100%
     # create NTFS partition on storage device
-    mkfs.ntfs -L Windows -f ${device}1
+    mkfs.ntfs -L Windows -f ${partitions[0]}
 else
     # echos error and exits
     echo -e "\e[33mError: Could not find GNU parted, Please install to continue. \033[0m"
@@ -103,7 +105,7 @@ done
 # mounts iso image
 mount -vo loop $1 ${mounts[0]}
 # mounts storage device
-mount -v ${device}1 ${mounts[1]}
+mount -v ${partitions[0]} ${mounts[1]}
 
 # rsync data from iso image to storage device
 rsync -Prv ${mounts[0]}/ ${mounts[1]}
